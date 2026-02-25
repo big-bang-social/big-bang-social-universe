@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Big Bang Social Universe</title>
+<meta name="description" content="Descubre en Big Bang Social Universe los servicios y productos comenzando como un alien digital y interactúa hasta convertirte en un ser humano.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://bigbangsocial.com/">
+<meta property="og:type" content="game">
+<meta property="og:title" content="Big Bang Social Universe">
+<meta property="og:description" content="Descubre en Big Bang Social Universe los servicios y productos comenzando como un alien digital y interactúa hasta convertirte en un ser humano.">
+<meta property="og:image" content="https://bigbangsocial.com/og-image.png">
+<meta property="og:url" content="https://bigbangsocial.com/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Big Bang Social Universe">
+<meta name="twitter:description" content="Descubre en Big Bang Social Universe los servicios y productos comenzando como un alien digital y interactúa hasta convertirte en un ser humano.">
+<meta name="twitter:image" content="https://bigbangsocial.com/og-image.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,300;0,600;1,400&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:#000; overflow:hidden; font-family:'Exo 2',sans-serif; touch-action:none; }
+  canvas { display:block; }
+
+  /* ─── STARS BG ─── */
+  #stars-bg {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    pointer-events:none; z-index:0; overflow:hidden;
+  }
+  .star { position:absolute; border-radius:50%; background:#fff; animation:twinkle var(--d,2s) infinite alternate; }
+  @keyframes twinkle { from{opacity:0.2;transform:scale(0.8)} to{opacity:1;transform:scale(1.2)} }
+
+  #ui { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
+
+  /* Crosshair */
+  #crosshair { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:22px; height:22px; pointer-events:none; }
+  #crosshair::before,#crosshair::after { content:''; position:absolute; background:rgba(255,160,40,0.9); }
+  #crosshair::before { width:2px; height:100%; left:50%; transform:translateX(-50%); }
+  #crosshair::after { width:100%; height:2px; top:50%; transform:translateY(-50%); }
+
+  /* HUD */
+  #hud {
+    position:absolute; bottom:170px; left:50%; transform:translateX(-50%);
+    background:rgba(10,5,30,0.8); border:1px solid rgba(160,80,255,0.5);
+    border-radius:20px; padding:8px 16px; color:#ccc; text-align:center;
+    font-size:10px; letter-spacing:1.5px; white-space:nowrap; font-family:'Orbitron',sans-serif;
+  }
+  #hud .k { color:#ff9d00; font-weight:900; }
+
+  /* Chaos */
+  #chaos-meter {
+    position:absolute; top:20px; right:16px;
+    background:rgba(10,5,30,0.85); border:1px solid rgba(160,80,255,0.6);
+    border-radius:12px; padding:10px 14px; color:#fff; min-width:150px;
+    box-shadow:0 0 20px rgba(120,40,200,0.3);
+  }
+  #chaos-meter h3 { font-size:9px; letter-spacing:2px; color:#c070ff; margin-bottom:6px; font-family:'Orbitron',sans-serif; }
+  #chaos-bar-wrap { background:#1a0a30; border-radius:4px; height:8px; overflow:hidden; }
+  #chaos-bar { height:100%; background:linear-gradient(90deg,#00ffcc,#ff6b00,#ff3399); width:0%; transition:width 0.3s; border-radius:4px; }
+  #chaos-label { font-size:10px; color:#9060cc; margin-top:4px; text-align:right; font-family:'Orbitron',sans-serif; }
+
+  /* Minimap */
+  #minimap {
+    position:absolute; top:20px; left:16px;
+    background:rgba(10,5,30,0.85); border:1px solid rgba(160,80,255,0.4);
+    border-radius:10px; padding:6px; box-shadow:0 0 16px rgba(120,40,200,0.2);
+  }
+  #minimap canvas { border-radius:4px; display:block; }
+  #minimap-label { color:#c070ff; font-size:8px; letter-spacing:2px; text-align:center; margin-top:3px; font-family:'Orbitron',sans-serif; }
+
+  /* Nearby */
+  #nearby-prompt {
+    position:absolute; top:56%; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg,rgba(160,40,255,0.9),rgba(255,80,0,0.9));
+    border-radius:20px; padding:10px 22px; color:#fff; font-size:13px;
+    display:none; pointer-events:all; letter-spacing:1px; cursor:pointer;
+    font-weight:700; text-align:center; font-family:'Orbitron',sans-serif;
+    box-shadow:0 0 20px rgba(160,80,255,0.6); border:1px solid rgba(255,160,80,0.4);
+  }
+
+  /* Toast */
+  #event-toast {
+    position:absolute; top:76px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg,#6a0dad,#ff6b00);
+    color:#fff; border-radius:20px; padding:8px 20px;
+    font-size:12px; font-weight:700; display:none;
+    pointer-events:none; letter-spacing:1px; white-space:nowrap;
+    box-shadow:0 4px 20px rgba(160,80,255,0.5); font-family:'Orbitron',sans-serif;
+  }
+
+  /* ─── DIALOG ─── */
+  #dialog-overlay {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(5,2,20,0.75); pointer-events:all; padding:10px;
+  }
+  #dialog {
+    background:linear-gradient(160deg,#0d0520 0%,#1a0838 50%,#0d1a30 100%);
+    border:1px solid rgba(160,80,255,0.7); border-radius:18px;
+    padding:24px; max-width:520px; width:100%; color:#fff;
+    position:relative; max-height:88vh; overflow-y:auto;
+    box-shadow:0 0 40px rgba(120,40,200,0.5),inset 0 0 40px rgba(160,80,255,0.05);
+  }
+  #dialog::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,#c040ff,#ff6b00,#00ccff,#c040ff);
+    border-radius:18px 18px 0 0; background-size:200%;
+    animation:shimmer 3s linear infinite;
+  }
+  @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+  #dialog-avatar { font-size:50px; text-align:center; margin-bottom:8px; filter:drop-shadow(0 0 12px rgba(160,80,255,0.8)); }
+  #dialog-name { font-size:17px; font-weight:900; color:#ff9d00; text-align:center; margin-bottom:2px; font-family:'Orbitron',sans-serif; text-shadow:0 0 16px rgba(255,150,0,0.5); }
+  #dialog-url { font-size:10px; color:#c070ff; text-align:center; margin-bottom:4px; letter-spacing:1px; }
+  #dialog-role { font-size:11px; color:#7a6a9a; text-align:center; margin-bottom:4px; letter-spacing:1px; }
+  #dialog-founded { font-size:10px; color:#5a4a7a; text-align:center; margin-bottom:14px; }
+  #dialog-text {
+    font-size:13px; line-height:1.8; color:#d0c0e8; margin-bottom:16px;
+    min-height:60px; border-left:3px solid #c040ff; padding-left:12px;
+    background:rgba(160,80,255,0.05); border-radius:0 8px 8px 0; padding:10px 12px;
+  }
+  #dialog-questions { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  #dialog-questions button {
+    background:rgba(160,80,255,0.15); border:1px solid rgba(160,80,255,0.4);
+    border-radius:8px; color:#c070ff; padding:8px 12px; font-size:11px;
+    cursor:pointer; font-family:'Exo 2',sans-serif; transition:all 0.2s;
+  }
+  #dialog-questions button:hover,#dialog-questions button:active {
+    background:rgba(160,80,255,0.35); color:#fff; border-color:#c040ff;
+  }
+  #dialog-custom { display:flex; gap:8px; }
+  #dialog-input {
+    flex:1; background:rgba(20,10,40,0.9); border:1px solid rgba(160,80,255,0.4);
+    border-radius:8px; color:#fff; padding:10px 12px; font-size:14px;
+    font-family:'Exo 2',sans-serif; outline:none;
+  }
+  #dialog-input:focus { border-color:#c040ff; box-shadow:0 0 10px rgba(160,80,255,0.3); }
+  #dialog-send {
+    background:linear-gradient(135deg,#8a20e0,#ff6b00); border:none; border-radius:8px;
+    color:#fff; padding:10px 16px; font-size:12px; cursor:pointer; font-weight:700;
+    font-family:'Orbitron',sans-serif; white-space:nowrap;
+  }
+  #dialog-close {
+    position:absolute; top:12px; right:14px; background:none; border:none;
+    color:#5a4a7a; font-size:22px; cursor:pointer; padding:4px; line-height:1;
+  }
+  #dialog-close:hover { color:#fff; }
+
+  /* ─── TITLE SCREEN ─── */
+  #title-screen {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    background:radial-gradient(ellipse at 50% 30%,#1a0545 0%,#0a0220 40%,#000 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    pointer-events:all; z-index:100; padding:20px; text-align:center; overflow:hidden;
+  }
+  #title-screen::before {
+    content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background:radial-gradient(ellipse at center, rgba(120,40,200,0.15) 0%, transparent 60%);
+    animation:cosmicPulse 4s ease-in-out infinite;
+  }
+  @keyframes cosmicPulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.1);opacity:1} }
+
+  .title-logo { font-size:80px; margin-bottom:0; filter:drop-shadow(0 0 30px rgba(160,80,255,0.8)); animation:float 3s ease-in-out infinite; position:relative; z-index:1; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+  #title-screen .brand-name {
+    font-family:'Orbitron',sans-serif; font-size:clamp(16px,5vw,30px); font-weight:900;
+    color:#ff9d00; letter-spacing:3px; margin-bottom:2px; position:relative; z-index:1;
+    text-shadow:0 0 30px rgba(255,150,0,0.7),0 0 60px rgba(255,100,0,0.4);
+  }
+  #title-screen .brand-sub {
+    font-family:'Orbitron',sans-serif; font-size:clamp(10px,3vw,14px); font-weight:400;
+    color:#c070ff; letter-spacing:4px; margin-bottom:4px; position:relative; z-index:1;
+  }
+  #title-screen .slogan {
+    font-family:'Exo 2',sans-serif; font-style:italic; font-size:13px;
+    color:#9080b0; margin-bottom:6px; letter-spacing:1px; position:relative; z-index:1;
+  }
+  #title-screen .founded {
+    font-size:10px; color:#5a4a7a; margin-bottom:20px; letter-spacing:2px; position:relative; z-index:1;
+    font-family:'Orbitron',sans-serif;
+  }
+  #title-screen .founders-box {
+    background:rgba(160,80,255,0.1); border:1px solid rgba(160,80,255,0.3);
+    border-radius:14px; padding:14px 24px; margin-bottom:24px; position:relative; z-index:1;
+    backdrop-filter:blur(10px);
+  }
+  #title-screen .founders-box .label { font-size:9px; color:#7a6a9a; letter-spacing:3px; margin-bottom:8px; font-family:'Orbitron',sans-serif; }
+  #title-screen .founders-box .name { font-size:13px; font-weight:700; color:#ff9d00; margin:2px 0; }
+  #title-screen .founders-box .role { font-size:10px; color:#c070ff; margin-bottom:4px; }
+
+  #start-btn {
+    background:linear-gradient(135deg,#8a20e0 0%,#ff6b00 100%);
+    border:none; border-radius:30px; color:#fff; font-size:14px; font-weight:900;
+    padding:16px 48px; cursor:pointer; font-family:'Orbitron',sans-serif;
+    letter-spacing:3px; transition:all 0.2s; position:relative; z-index:1;
+    box-shadow:0 0 30px rgba(160,80,255,0.6),0 0 60px rgba(255,100,0,0.3);
+    animation:btnPulse 2s ease-in-out infinite;
+  }
+  @keyframes btnPulse { 0%,100%{box-shadow:0 0 30px rgba(160,80,255,0.6),0 0 60px rgba(255,100,0,0.3)} 50%{box-shadow:0 0 50px rgba(160,80,255,0.9),0 0 80px rgba(255,100,0,0.5)} }
+  #start-btn:active { transform:scale(0.96); }
+
+  /* ─── MOBILE JOYSTICKS ─── */
+  #touch-controls {
+    position:absolute; bottom:0; left:0; width:100%; height:160px;
+    pointer-events:none; display:none;
+  }
+  .joy-zone {
+    position:absolute; bottom:15px; width:128px; height:128px;
+    border-radius:50%; pointer-events:all; touch-action:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #jmove { left:18px; background:rgba(160,80,255,0.08); border:1.5px solid rgba(160,80,255,0.35); }
+  #jlook { right:18px; background:rgba(0,200,255,0.06); border:1.5px solid rgba(0,200,255,0.25); }
+  .joy-dot {
+    width:46px; height:46px; border-radius:50%; position:absolute;
+    transition:transform 0.04s;
+  }
+  #jmove .joy-dot { background:radial-gradient(circle,rgba(200,100,255,0.9),rgba(120,40,200,0.6)); border:2px solid #c040ff; box-shadow:0 0 10px rgba(160,80,255,0.5); }
+  #jlook .joy-dot { background:radial-gradient(circle,rgba(80,200,255,0.9),rgba(0,120,200,0.6)); border:2px solid #00c8ff; box-shadow:0 0 10px rgba(0,200,255,0.4); }
+  .joy-label { position:absolute; bottom:-18px; font-size:8px; color:#7a5a9a; letter-spacing:2px; font-family:'Orbitron',sans-serif; }
+
+  #mob-actions {
+    position:absolute; bottom:52px; left:50%; transform:translateX(-50%);
+    display:flex; gap:16px; pointer-events:all;
+  }
+  .mob-btn {
+    width:54px; height:54px; border-radius:50%; border:none; cursor:pointer;
+    font-size:20px; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 3px 16px rgba(0,0,0,0.6); touch-action:manipulation;
+    font-family:sans-serif;
+  }
+  #mob-talk { background:linear-gradient(135deg,#8a20e0,#c040ff); box-shadow:0 0 16px rgba(160,80,255,0.6); }
+  #mob-dance { background:linear-gradient(135deg,#ff6b00,#ff3399); box-shadow:0 0 16px rgba(255,80,0,0.5); }
+
+  /* ─── ORBIT RING (decorative) ─── */
+  .orbit-ring {
+    position:absolute; border-radius:50%; border:1px solid rgba(160,80,255,0.15);
+    animation:spin var(--s,20s) linear infinite;
+    pointer-events:none;
+  }
+  @keyframes spin { from{transform:translate(-50%,-50%) rotate(0deg)} to{transform:translate(-50%,-50%) rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<!-- Starfield -->
+<div id="stars-bg"></div>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <div id="crosshair"></div>
+
+  <div id="chaos-meter">
+    <h3>⚡ ENERGÍA CÓSMICA</h3>
+    <div id="chaos-bar-wrap"><div id="chaos-bar"></div></div>
+    <div id="chaos-label">0%</div>
+  </div>
+
+  <div id="minimap">
+    <canvas id="mm" width="90" height="90"></canvas>
+    <div id="minimap-label">UNIVERSO</div>
+  </div>
+
+  <div id="nearby-prompt">🚀 TOCA PARA HABLAR</div>
+  <div id="event-toast"></div>
+
+  <div id="hud">
+    <span class="k">WASD</span> Mover &nbsp;|&nbsp;
+    <span class="k">←→</span> Girar &nbsp;|&nbsp;
+    <span class="k">E</span> Hablar &nbsp;|&nbsp;
+    <span class="k">SPACE</span> Bailar
+  </div>
+
+  <!-- TOUCH CONTROLS -->
+  <div id="touch-controls">
+    <div class="joy-zone" id="jmove">
+      <div class="joy-dot"></div>
+      <span class="joy-label">MOVER</span>
+    </div>
+    <div id="mob-actions">
+      <button class="mob-btn" id="mob-talk">💬</button>
+      <button class="mob-btn" id="mob-dance">💃</button>
+    </div>
+    <div class="joy-zone" id="jlook">
+      <div class="joy-dot"></div>
+      <span class="joy-label">GIRAR</span>
+    </div>
+  </div>
+
+  <!-- DIALOG -->
+  <div id="dialog-overlay">
+    <div id="dialog">
+      <button id="dialog-close">✕</button>
+      <div id="dialog-avatar"></div>
+      <div id="dialog-name"></div>
+      <div id="dialog-url"></div>
+      <div id="dialog-role"></div>
+      <div id="dialog-founded"></div>
+      <div id="dialog-text"></div>
+      <div id="dialog-questions"></div>
+      <div id="dialog-custom">
+        <input id="dialog-input" type="text" placeholder="Pregunta lo que desees..." inputmode="text">
+        <button id="dialog-send">ENVIAR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TITLE SCREEN -->
+  <div id="title-screen">
+    <div class="title-logo">🌌</div>
+    <div class="brand-name">BIG BANG SOCIAL</div>
+    <div class="brand-sub">MEDIA MARKETING</div>
+    <div class="slogan">¡Expertos en Líderes VIP que desarrollan Negocios Online!</div>
+    <div class="founded">📅 Fundado el 27/05/2014 · www.BigBangSocial.com</div>
+    <div class="founders-box">
+      <div class="label">✦ FUNDADORES ✦</div>
+      <div class="name">🚀 Ion Jacob</div>
+      <div class="role">Desarrollador de Marcas VIP · ioniacob.com</div>
+      <div class="name">✨ Jacqueline MQ</div>
+      <div class="role">Creadora de Escritores Famosos · jacquelinemq.com</div>
+    </div>
+    <button id="start-btn">🌌 ENTRAR AL UNIVERSO</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── STARS ─────────────────────────────────────────────────────────────────────
+const starsBg = document.getElementById('stars-bg');
+for(let i=0;i<120;i++){
+  const s=document.createElement('div'); s.className='star';
+  const size=Math.random()*2.5+0.5;
+  Object.assign(s.style,{
+    width:size+'px', height:size+'px',
+    left:Math.random()*100+'%', top:Math.random()*100+'%',
+    '--d':(1.5+Math.random()*3)+'s',
+    animationDelay:Math.random()*3+'s',
+    opacity:Math.random()
+  });
+  starsBg.appendChild(s);
+}
+
+// ─── MOBILE ────────────────────────────────────────────────────────────────────
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||('ontouchstart' in window);
+if(isMobile){ document.getElementById('touch-controls').style.display='block'; document.getElementById('hud').style.display='none'; }
+
+// ─── SCENE ─────────────────────────────────────────────────────────────────────
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:!isMobile,alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,isMobile?1.5:2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.shadowMap.enabled=!isMobile;
+renderer.setClearColor(0x030010);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x050018);
+scene.fog=new THREE.FogExp2(0x050018, 0.025);
+
+const camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,100);
+camera.position.set(0,1.65,8);
+
+window.addEventListener('resize',()=>{
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// ─── PROJECTS (characters) ─────────────────────────────────────────────────────
+const PROJECTS = [
+  {
+    name:'Legados', url:'www.BigBangSocial.com', role:'Marca Posicionada', emoji:'🌌',
+    color:0x9030cc, glowColor:0xc040ff, x:-7, z:-5, founded:'Fundado el 27/05/2014',
+    tag:'♾ LEGADO DIGITAL',
+    desc:'CREAMOS TU LEGADO DIGITAL PARA INSPIRAR AL MUNDO. Creamos y ejecutamos tu plan de marketing. Aplicaremos los ajustes de la excelencia a cada detalle en tu Marca Personal y Negocios.',
+    questions:['¿Qué es Big Bang Social?','¿Cuáles son los planes?','¿Cómo posiciono mi marca?'],
+    responses:[
+      '¡Big Bang Social es el epicentro del marketing VIP! Somos expertos en construir legados digitales que inspiran al mundo. ¿Estás listo para tu Big Bang? 🌌',
+      'Desde Ser Nebulosa (750€) hasta Ser Cósmico (11.500€) — cada plan es un universo de posibilidades para tu marca. ✨',
+      'Tu marca es una estrella esperando explotar. Con nuestro equipo, delegas, automatizas y te posicionas como líder VIP en tu industria. 🚀'
+    ]
+  },
+  {
+    name:'Escritor Famoso', url:'www.EscritoresFamosos.com', role:'Ghostwriter & Copywriter VIP', emoji:'✍️',
+    color:0xcc3060, glowColor:0xff4488, x:7, z:-5, founded:'Fundado el 25/07/2015',
+    tag:'★ ESCRITORA VIP Y EDITOR PRO',
+    desc:'Te escribimos y publicamos tu libro. Somos la Escritora y Editor Fantasmas más solicitados desde Europa en habla hispana. ¡Ser Millonario y Escritor Famoso es Posible!',
+    questions:['¿Me escriben mi libro?','¿Para qué mercado publican?','¿Cómo empiezo?'],
+    responses:[
+      '¡Sí! Somos tus ghostwriters VIP. Tú inspiras, nosotros escribimos. 40 libros escritos, 0 excusas. ✍️',
+      'Publicamos para más de 500 millones de hispanohablantes. Tu historia merece ese alcance cósmico. 🌎',
+      'Reserva tu Escritora VIP y Editor PRO — el primer paso hacia tu legado literario comienza hoy. ⭐'
+    ]
+  },
+  {
+    name:'Bestseller', url:'www.LibrosFamosos.com', role:'Edición & Marketing de Libros', emoji:'📚',
+    color:0xcc5020, glowColor:0xff7030, x:0, z:-9, founded:'Fundado el 04/09/2015',
+    tag:'❤︎ EDITORES PRO BESTSELLER',
+    desc:'Creamos la Edición de tu Libro publicado. Damos una nueva imagen a tu obra desde la portada a la edición con un Marketing irresistible para atraer más lectores.',
+    questions:['¿Qué hacen con mi libro?','¿Puedo ser Best Seller?','¿Qué incluye la edición?'],
+    responses:[
+      'Transformamos tu libro publicado en una obra de arte de marketing. Nueva portada, nueva edición, nuevo impacto. 📚',
+      '¡Por supuesto! Con más de 4.2K seguidores y nuestra estrategia, tu libro puede liderar las listas. ⭐',
+      'Todo: portada, maquetación, edición de texto, y una estrategia de marketing irresistible para posicionarte TOP. 🏆'
+    ]
+  },
+  {
+    name:'Chef Internacional', url:'www.Chefs.Casa', role:'Libros y Cursos de Cocina', emoji:'👨‍🍳',
+    color:0xcc8010, glowColor:0xffaa20, x:-9, z:0, founded:'Fundado el 20/05/2020',
+    tag:'♨︎ CHEF EN CADA CASA',
+    desc:'RECOPILAMOS TUS RECETAS Y MENÚS DE AUTOR PARA EDUCAR. Creamos tus libros y cursos para venderlos internacionalmente. ¡Posiciónate como Chef en cada casa!',
+    questions:['¿Qué crean para chefs?','¿Cómo llego a más hogares?','¿Venden internacionalmente?'],
+    responses:[
+      'Creamos tu libro de recetas, cursos online y todo el contenido digital para que tu cocina inspire al mundo. 🍽️',
+      'Con más de 13.5K seguidores y tu marca de chef, llegaremos a cocinas de todo el mundo hispanohablante. 🌎',
+      '¡Sí! Vendemos tus cursos y libros internacionalmente. La cocina no tiene fronteras... ni tampoco tu legado. ✨'
+    ]
+  },
+  {
+    name:'Fundador Destacado', url:'www.MarketingMillonario.com', role:'Marketing de Millonarios', emoji:'💰',
+    color:0x20aa50, glowColor:0x30ee70, x:9, z:0, founded:'Fundado el 29/07/2013',
+    tag:'⦿ ALCANZA EL SIGUIENTE NIVEL',
+    desc:'PERFECCIONAMOS TU MARCA PARA ALCANZAR EL SIGUIENTE NIVEL. Investigaremos a los TOP Millonarios de tu Industria para crear y ejecutar tus estrategias de marketing.',
+    questions:['¿Cómo funciona?','¿A qué millonarios estudian?','¿Cuánto puedo crecer?'],
+    responses:[
+      'Estudiamos a los TOP millonarios de tu industria y construimos estrategias para que no solo los iguales, sino que los superes. 💰',
+      'Desde Richard Branson hasta líderes de tu nicho específico — analizamos a los mejores para que seas el siguiente. 🏆',
+      '¡El único límite es el que tú te pongas! Con más de 2K en comunidad y creciendo, el universo es tuyo. 🌌'
+    ]
+  },
+  {
+    name:'Nómada Digital', url:'www.NomadasDigitales.TOP', role:'Marca de Viajero Internacional', emoji:'✈️',
+    color:0x2080cc, glowColor:0x40aaff, x:0, z:8, founded:'Fundado el 14/11/2022',
+    tag:'⎈ INMORTALIZA TU EXPERIENCIA',
+    desc:'INMORTALIZA TU EXPERIENCIA COMO VIAJERO. Creamos tus guías de viajes. Diversificamos tus recuerdos creando diferentes formatos de contenidos para compartir tus experiencias.',
+    questions:['¿Qué crean para viajeros?','¿Cómo monetizo mis viajes?','¿Qué formatos usan?'],
+    responses:[
+      'Transformamos tus aventuras en guías de viaje, contenido viral y una marca de nómada digital que inspira al mundo. ✈️',
+      'Con 13.5K+ seguidores y tu historia única, creamos múltiples fuentes de ingreso desde tu pasión por viajar. 💫',
+      'Blogs, ebooks, videos, reels, podcasts — tu experiencia en todos los formatos para alcanzar al mundo digitalmente. 🌍'
+    ]
+  },
+  {
+    name:'Gran Sistema', url:'www.GranSistema.com', role:'Sistema de Marketing MLM', emoji:'⚙️',
+    color:0x8030aa, glowColor:0xbb50dd, x:-5, z:6, founded:'Fundado el 26/07/2013',
+    tag:'❖ SISTEMA DE PROSPECCIÓN PRIVADO',
+    desc:'REUNIMOS TODO TU CONTENIDO Y HERRAMIENTAS EN UN SISTEMA. Diseñamos tu Sistema de Prospección Privado. Desde el año 2003 creamos herramientas y estrategias de contenidos para los Líderes MLM.',
+    questions:['¿Qué es el Gran Sistema?','¿Para líderes MLM?','¿Cómo fidelizo mi equipo?'],
+    responses:[
+      'El Gran Sistema es tu ecosistema privado de marketing — todas tus herramientas, contenidos y estrategias en un solo lugar. ⚙️',
+      '¡Desde 2003 trabajando con líderes MLM! Con 5.1K+ en comunidad, sabemos exactamente cómo hacer crecer tu red. 🌐',
+      'Fidelizamos a tu equipo con contenidos duplicables y sistemas automatizados. ¡Tus royalties te lo agradecerán! 💎'
+    ]
+  },
+  {
+    name:'Escuela MLM', url:'www.EscuelaMLM.com', role:'Élite Multinivel Educativa', emoji:'👑',
+    color:0xaa2050, glowColor:0xee3077, x:5, z:6, founded:'Fundado el 15/07/2015',
+    tag:'♚ ÉLITE MULTINIVEL',
+    desc:'VIRALIZAMOS TU MARCA DE AUTOR MLM. Creamos libros, sistemas de venta para líderes TOP y Educamos a Equipos en Redes Sociales. ¡Duplicar en el Multinivel es la Clave!',
+    questions:['¿Qué enseñan?','¿Cómo duplico mi equipo?','¿Para qué nivel es?'],
+    responses:[
+      'Enseñamos a líderes MLM a construir equipos duplicables, crear contenido viral y posicionarse como autoridad en su industria. 👑',
+      'La duplicación es arte y ciencia. Con nuestro sistema, cada líder que formas crea otros líderes. Efecto Big Bang garantizado. 🌌',
+      'Para todos los niveles — desde el distribuidor que comienza hasta el líder TOP que quiere escalar su legado multinivel. 🏆'
+    ]
+  },
+  {
+    name:'Ion Jacob', url:'ioniacob.com', role:'Co-Fundador · Desarrollador de Marcas VIP', emoji:'🚀',
+    color:0x3070cc, glowColor:0x60aaff, x:-3, z:-2, founded:'@IonIacob · LinkedIn',
+    tag:'FUNDADOR BIG BANG SOCIAL',
+    desc:'Creo Sistemas de Marketing. Publico Libros a Famosos. Asesoro a Influencers. PR de Clientes VIPs. Copywriter estratégico y arquitecto del ecosistema Big Bang Social.',
+    questions:['¿Qué haces?','¿Cómo creas sistemas de marketing?','¿Asesoras influencers?'],
+    responses:[
+      'Creo ecosistemas de marketing que transforman marcas en legados digitales. Big Bang Social nació de mi obsesión por el crecimiento exponencial. 🚀',
+      'Un sistema de marketing es como una galaxia: muchas piezas en orbita perfecta. Yo diseño esa órbita para tu marca. 🌌',
+      '¡Sí! Trabajo solo con VIPs que están listos para explotar. Si estás leyendo esto... quizás seas el próximo. 😄'
+    ]
+  },
+  {
+    name:'Jacqueline MQ', url:'jacquelinemq.com', role:'Co-Fundadora · Creadora de Escritores Famosos', emoji:'✨',
+    color:0xcc2070, glowColor:0xff40aa, x:3, z:-2, founded:'@Jacqueline_MQ · LinkedIn',
+    tag:'FUNDADORA BIG BANG SOCIAL',
+    desc:'Escribí 40 Libros. Escribo Libros a Famosos. Asesoro como Ghostwriter. Solo publico a VIPs. La Escritora y Editor Fantasma más solicitada desde Europa en habla hispana.',
+    questions:['¿Qué libros has escrito?','¿Solo trabajas con VIPs?','¿Cómo es ser ghostwriter?'],
+    responses:[
+      '40 libros escritos, ninguno con mi nombre en la portada. Ese es el poder del ghostwriter: tu historia, mi pluma, tu gloria. ✨',
+      'Trabajo solo con VIPs porque el tiempo es el recurso más valioso. Si eres VIP, hablemos. Si no... ¡hazte VIP primero! 😄',
+      'Ser ghostwriter es ser la voz que alguien soñó tener. Es el arte de desaparecer para que otro brille. Hermoso, ¿verdad? 📖'
+    ]
+  }
+];
+
+// ─── STATE ─────────────────────────────────────────────────────────────────────
+let chaos=0, isDancing=false, dialogOpen=false, activeProj=null;
+let yaw=Math.PI, started=false;
+let roombaMesh=null, roombaAngle=0, roombaFollowing=false;
+const projMeshes=[], projLights=[];
+const keys={};
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────────
+function box(w,h,d,col){ return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:col})); }
+function cyl(rt,rb,h,col,seg=16){ return new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),new THREE.MeshLambertMaterial({color:col})); }
+
+// ─── BUILD OFFICE ──────────────────────────────────────────────────────────────
+function buildOffice(){
+  // Dark cosmic floor with glow grid
+  const floor=box(42,0.1,42,0x0a0520); floor.position.y=-0.05; scene.add(floor);
+
+  // Grid lines on floor
+  const gridHelper=new THREE.GridHelper(40,20,0x2a0a50,0x1a0530);
+  gridHelper.position.y=0.01; scene.add(gridHelper);
+
+  // Ceiling
+  const ceil=box(42,0.1,42,0x080315); ceil.position.y=4.5; scene.add(ceil);
+
+  // Walls - dark cosmic
+  const wallMat=new THREE.MeshLambertMaterial({color:0x0d0525});
+  [{w:42,h:4.5,d:0.15,x:0,y:2.25,z:-21},{w:42,h:4.5,d:0.15,x:0,y:2.25,z:21},
+   {w:0.15,h:4.5,d:42,x:-21,y:2.25,z:0},{w:0.15,h:4.5,d:42,x:21,y:2.25,z:0}].forEach(o=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(o.w,o.h,o.d),wallMat);
+    m.position.set(o.x,o.y,o.z); scene.add(m);
+  });
+
+  // Glowing wall strips
+  [[0,-20.9,0,42,'h'],[0,20.9,0,42,'h'],[-20.9,0,90,'v'],[20.9,0,90,'v']].forEach(([x,z,ry,len,dir])=>{
+    const strip=box(dir==='h'?len:0.05,0.05,dir==='h'?0.05:len,0xc040ff);
+    strip.position.set(x,0.5,z); if(ry) strip.rotation.y=ry*Math.PI/180; scene.add(strip);
+    const strip2=strip.clone(); strip2.position.y=4.0; scene.add(strip2);
+  });
+
+  // Cosmic ceiling lights (colored)
+  const lightColors=[0xc040ff,0xff6b00,0x00ccff,0xff3399,0x30ff90,0xff9d00];
+  let li=0;
+  for(let x=-8;x<=8;x+=8) for(let z=-8;z<=8;z+=8){
+    const col=lightColors[li%lightColors.length]; li++;
+    const l=new THREE.PointLight(col,0.6,12); l.position.set(x,4.3,z); scene.add(l);
+    const b=box(0.5,0.05,0.5,col); b.position.set(x,4.44,z); scene.add(b);
+  }
+
+  // Ambient + directional
+  scene.add(new THREE.AmbientLight(0x200840,0.8));
+  const sun=new THREE.DirectionalLight(0xc080ff,0.5); sun.position.set(5,10,5); scene.add(sun);
+
+  // DESKS - glowing purple frames
+  [[-7,-5],[-3.5,-5],[0,-5],[3.5,-5],[7,-5],
+   [-7,-1.5],[-3.5,-1.5],[0,-1.5],[3.5,-1.5],[7,-1.5],
+   [-7,2],[-3.5,2],[0,2],[3.5,2],[7,2]].forEach(([x,z])=>{
+    const deskTop=box(1.6,0.06,0.85,0x150835); deskTop.position.set(x,0.75,z); scene.add(deskTop);
+    // Glowing desk edge
+    const edge=box(1.62,0.04,0.02,0x8020cc); edge.position.set(x,0.74,z-0.42); scene.add(edge);
+    // Monitor
+    const mon=box(0.7,0.5,0.05,0x0a0520); mon.position.set(x,1.08,z-0.25); scene.add(mon);
+    const scr=box(0.65,0.45,0.01,0x0d1a3a); scr.position.set(x,1.08,z-0.272); scene.add(scr);
+    // Monitor glow line
+    const mgl=box(0.65,0.02,0.01,0x4080ff); mgl.position.set(x,0.87,z-0.273); scene.add(mgl);
+    // Chair
+    const ch=box(0.56,0.06,0.56,0x1a0840); ch.position.set(x,0.5,z+0.62); scene.add(ch);
+    const cb=box(0.56,0.5,0.06,0x1a0840); cb.position.set(x,0.78,z+0.9); scene.add(cb);
+  });
+
+  // BIG BANG logo sign
+  const signBg=box(8,1.2,0.1,0x1a0538); signBg.position.set(0,3.6,-20.85); scene.add(signBg);
+  const signGlow=box(8.1,1.25,0.05,0x8020cc); signGlow.position.set(0,3.6,-20.9); scene.add(signGlow);
+  // Colored accent bars under sign
+  [[0xc040ff,0xff6b00,0x00ccff,0xff3399,0x30ff90]].flat().forEach((c,i)=>{
+    const bar=box(1.5,0.06,0.05,c); bar.position.set(-3+i*1.5,2.9,-20.84); scene.add(bar);
+  });
+
+  // Coffee station (cosmic)
+  const cnt=box(2.2,0.9,0.85,0x12043a); cnt.position.set(15,0.45,-15); scene.add(cnt);
+  const cnte=box(2.22,0.02,0.02,0xc040ff); cnte.position.set(15,0.9,-15); scene.add(cnte);
+  const mach=box(0.45,0.55,0.32,0x0a0220); mach.position.set(15,1.18,-15); scene.add(mach);
+  const machGlow=box(0.1,0.1,0.02,0x00ffcc); machGlow.position.set(15,1.2,-14.83); scene.add(machGlow);
+
+  // Cosmic plants (nebula-colored)
+  [[16,16],[-16,-16],[16,-16],[-16,16],[-16,0],[16,0]].forEach(([x,z],i)=>{
+    const cols=[0xc040ff,0xff6b00,0x00ccff,0xff3399,0x30ff90,0xff9d00];
+    const pot=cyl(0.22,0.17,0.32,cols[i%6]); pot.position.set(x,0.16,z); scene.add(pot);
+    const plant=cyl(0.28,0.08,0.7,0x102040); plant.position.set(x,0.6,z); scene.add(plant);
+    const glow=new THREE.PointLight(cols[i%6],0.4,3); glow.position.set(x,0.8,z); scene.add(glow);
+  });
+
+  // Whiteboard
+  const wb=box(6,2.2,0.06,0x0d0830); wb.position.set(0,2.2,-20.9); scene.add(wb);
+  const wbf=box(6.1,2.3,0.04,0x4020aa); wbf.position.set(0,2.2,-20.92); scene.add(wbf);
+
+  // Roomba
+  roombaMesh=cyl(0.32,0.32,0.11,0x1a0538,24);
+  roombaMesh.position.set(0,0.07,3); scene.add(roombaMesh);
+  const rt=cyl(0.13,0.13,0.05,0xc040ff,12); rt.position.set(0,0.13,3); scene.add(rt);
+  const roombaNeon=new THREE.PointLight(0xc040ff,0.5,2); roombaNeon.position.set(0,0.3,3); scene.add(roombaNeon);
+
+  // Breakroom table
+  const brt=box(2.5,0.06,1.4,0x120438); brt.position.set(-15,0.75,0); scene.add(brt);
+  const brte=box(2.52,0.03,0.02,0xff6b00); brte.position.set(-15,0.75,-0.7); scene.add(brte);
+}
+
+// ─── BUILD PROJECTS (as cosmic pillars) ────────────────────────────────────────
+function buildProjects(){
+  PROJECTS.forEach((p,i)=>{
+    const g=new THREE.Group();
+
+    // Base pillar
+    const pillar=cyl(0.28,0.28,1.0,p.color,8);
+    pillar.position.y=0.5; g.add(pillar);
+
+    // Top crystal
+    const crystal=new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.26,0),
+      new THREE.MeshLambertMaterial({color:p.color, emissive:p.glowColor, emissiveIntensity:0.4})
+    );
+    crystal.position.y=1.3; g.add(crystal);
+
+    // Orbiting ring
+    const ringG=new THREE.TorusGeometry(0.38,0.025,8,32);
+    const ringM=new THREE.MeshLambertMaterial({color:p.glowColor, emissive:p.glowColor, emissiveIntensity:0.6});
+    const ring=new THREE.Mesh(ringG,ringM);
+    ring.position.y=1.3; ring.rotation.x=Math.PI/2; g.add(ring);
+
+    // Glow light
+    const projLight=new THREE.PointLight(p.glowColor,0.7,4);
+    projLight.position.y=1.5; g.add(projLight);
+    projLights.push(projLight);
+
+    // Emoji label (canvas texture)
+    const c2d=document.createElement('canvas'); c2d.width=256; c2d.height=128;
+    const ctx=c2d.getContext('2d');
+    ctx.fillStyle='rgba(10,3,30,0.85)'; ctx.roundRect(4,4,248,120,20); ctx.fill();
+    ctx.strokeStyle=`#${p.color.toString(16).padStart(6,'0')}`; ctx.lineWidth=2;
+    ctx.roundRect(4,4,248,120,20); ctx.stroke();
+    ctx.font='36px serif'; ctx.textAlign='center'; ctx.fillText(p.emoji,128,52);
+    ctx.fillStyle='#ffffff'; ctx.font='bold 18px Orbitron,monospace'; ctx.fillText(p.name,128,82);
+    ctx.fillStyle='#9060cc'; ctx.font='11px monospace'; ctx.fillText(p.url,128,104);
+    const tex=new THREE.CanvasTexture(c2d);
+    const label=new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.45),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+    label.position.set(0,2.0,0);
+    g.add(label);
+
+    g.position.set(p.x,0,p.z);
+    g.userData={projIndex:i};
+    scene.add(g);
+    projMeshes.push(g);
+  });
+}
+
+buildOffice();
+buildProjects();
+
+// ─── KEYBOARD ──────────────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{ keys[e.code]=true;
+  if(!started) return;
+  if(e.code==='KeyE'&&!dialogOpen) tryInteract();
+  if(e.code==='Space'){e.preventDefault();toggleDance();}
+  if(e.code==='Escape') closeDialog();
+});
+document.addEventListener('keyup',e=>{ keys[e.code]=false; });
+
+// Pointer lock desktop
+let isPointerLocked=false;
+canvas.addEventListener('click',()=>{ if(started&&!dialogOpen&&!isMobile) canvas.requestPointerLock(); });
+document.addEventListener('pointerlockchange',()=>{ isPointerLocked=document.pointerLockElement===canvas; });
+document.addEventListener('mousemove',e=>{
+  if(!isPointerLocked||dialogOpen) return;
+  yaw-=e.movementX*0.002;
+});
+
+// ─── MOBILE JOYSTICKS ──────────────────────────────────────────────────────────
+let moveTouchId=null, lookTouchId=null;
+let moveVec={x:0,y:0}, lookVec={x:0,y:0};
+const JMAX=42;
+
+function jCenter(el){ const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; }
+
+function onTouchStart(e){
+  if(!started||dialogOpen) return; e.preventDefault();
+  const jm=document.getElementById('jmove'), jl=document.getElementById('jlook');
+  const rM=jm.getBoundingClientRect(), rL=jl.getBoundingClientRect();
+  for(const t of e.changedTouches){
+    if(t.clientX>=rM.left&&t.clientX<=rM.right&&t.clientY>=rM.top&&t.clientY<=rM.bottom){
+      moveTouchId=t.identifier; moveVec={x:0,y:0};
+    } else if(t.clientX>=rL.left&&t.clientX<=rL.right&&t.clientY>=rL.top&&t.clientY<=rL.bottom){
+      lookTouchId=t.identifier; lookVec={x:0,y:0};
+    }
+  }
+}
+function onTouchMove(e){
+  if(!started||dialogOpen) return; e.preventDefault();
+  const jm=document.getElementById('jmove'), jl=document.getElementById('jlook');
+  for(const t of e.changedTouches){
+    if(t.identifier===moveTouchId){
+      const c=jCenter(jm), dx=t.clientX-c.x, dy=t.clientY-c.y;
+      const len=Math.sqrt(dx*dx+dy*dy), cl=Math.min(len,JMAX);
+      const nx=len>0?dx/len:0, ny=len>0?dy/len:0;
+      moveVec={x:nx*(cl/JMAX),y:ny*(cl/JMAX)};
+      jm.querySelector('.joy-dot').style.transform=`translate(${nx*cl}px,${ny*cl}px)`;
+    } else if(t.identifier===lookTouchId){
+      const c=jCenter(jl), dx=t.clientX-c.x, dy=t.clientY-c.y;
+      const len=Math.sqrt(dx*dx+dy*dy), cl=Math.min(len,JMAX);
+      const nx=len>0?dx/len:0, ny=len>0?dy/len:0;
+      lookVec={x:nx*(cl/JMAX)};
+      jl.querySelector('.joy-dot').style.transform=`translate(${nx*cl}px,${ny*cl}px)`;
+    }
+  }
+}
+function onTouchEnd(e){
+  for(const t of e.changedTouches){
+    if(t.identifier===moveTouchId){ moveTouchId=null; moveVec={x:0,y:0}; document.getElementById('jmove').querySelector('.joy-dot').style.transform=''; }
+    if(t.identifier===lookTouchId){ lookTouchId=null; lookVec={x:0}; document.getElementById('jlook').querySelector('.joy-dot').style.transform=''; }
+  }
+}
+document.addEventListener('touchstart',onTouchStart,{passive:false});
+document.addEventListener('touchmove',onTouchMove,{passive:false});
+document.addEventListener('touchend',onTouchEnd,{passive:false});
+
+document.getElementById('mob-talk').addEventListener('touchstart',e=>{ e.preventDefault(); if(started&&!dialogOpen) tryInteract(); },{passive:false});
+document.getElementById('mob-dance').addEventListener('touchstart',e=>{ e.preventDefault(); if(started) toggleDance(); },{passive:false});
+document.getElementById('nearby-prompt').addEventListener('click',()=>{ if(started&&!dialogOpen) tryInteract(); });
+
+// ─── DIALOG ────────────────────────────────────────────────────────────────────
+function findNearby(){
+  const px=camera.position.x, pz=camera.position.z;
+  for(let i=0;i<PROJECTS.length;i++){
+    const p=PROJECTS[i];
+    let dist;
+    if(i<8){ dist=Math.sqrt((p.x-px)**2+(p.z-pz)**2); }
+    else { dist=Math.sqrt((p.x-px)**2+(p.z-pz)**2); }
+    if(dist<2.8) return i;
+  }
+  return -1;
+}
+
+function tryInteract(){ const idx=findNearby(); if(idx>=0) openDialog(idx); }
+
+function openDialog(idx){
+  activeProj=PROJECTS[idx]; dialogOpen=true;
+  if(isPointerLocked) document.exitPointerLock();
+  document.getElementById('dialog-avatar').textContent=activeProj.emoji;
+  document.getElementById('dialog-name').textContent=activeProj.name;
+  document.getElementById('dialog-url').textContent='🌐 '+activeProj.url;
+  document.getElementById('dialog-role').textContent=activeProj.role;
+  document.getElementById('dialog-founded').textContent='📅 '+activeProj.founded+' · '+activeProj.tag;
+  document.getElementById('dialog-text').textContent=activeProj.desc;
+  const qDiv=document.getElementById('dialog-questions'); qDiv.innerHTML='';
+  activeProj.questions.forEach((q,i)=>{
+    const btn=document.createElement('button'); btn.textContent=q;
+    btn.onclick=()=>{ document.getElementById('dialog-text').textContent=activeProj.responses[i]; addChaos(6); };
+    qDiv.appendChild(btn);
+  });
+  document.getElementById('dialog-overlay').style.display='flex';
+}
+
+function closeDialog(){
+  dialogOpen=false; activeProj=null;
+  document.getElementById('dialog-overlay').style.display='none';
+  document.getElementById('dialog-input').value='';
+}
+document.getElementById('dialog-close').onclick=closeDialog;
+document.getElementById('dialog-send').onclick=askCustom;
+document.getElementById('dialog-input').addEventListener('keydown',e=>{ if(e.key==='Enter') askCustom(); });
+
+async function askCustom(){
+  const input=document.getElementById('dialog-input');
+  const q=input.value.trim(); if(!q) return;
+  input.value='';
+  const idx=PROJECTS.indexOf(activeProj);
+  document.getElementById('dialog-text').textContent='⏳ Consultando el universo...';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:`Eres ${activeProj.name} (${activeProj.url}), proyecto de Big Bang Social Media Marketing. Rol: ${activeProj.role}. Trait: ${activeProj.tag}. Responde en español, divertido, breve (2-3 frases), en personaje. Siempre menciona Big Bang Social o el proyecto de forma natural.`,
+        messages:[{role:'user',content:q}]
+      })
+    });
+    if(!res.ok) throw new Error();
+    const data=await res.json();
+    document.getElementById('dialog-text').textContent=data.content?.find(b=>b.type==='text')?.text||'¡El universo necesita un momento! Intenta de nuevo. 🌌';
+  } catch {
+    const fb=activeProj.responses; document.getElementById('dialog-text').textContent=fb[Math.floor(Math.random()*fb.length)];
+  }
+  addChaos(9);
+}
+
+// ─── CHAOS ─────────────────────────────────────────────────────────────────────
+function addChaos(amt){
+  chaos=Math.min(100,chaos+amt);
+  document.getElementById('chaos-bar').style.width=chaos+'%';
+  document.getElementById('chaos-label').textContent=Math.round(chaos)+'%';
+  if(chaos>=100) triggerBigBang();
+  else if(chaos>=70) showToast('🌌 ¡ENERGÍA CÓSMICA ELEVADA!');
+}
+
+let bigBangActive=false, bbInterval;
+function triggerBigBang(){
+  if(bigBangActive) return; bigBangActive=true;
+  showToast('💥 ¡BIG BANG ACTIVADO! ¡TODO EXPLOTA! 🌌');
+  const colors=[0x2a0060,0x400010,0x001040,0x003020,0x400040];
+  let ci=0;
+  bbInterval=setInterval(()=>{
+    const c=new THREE.Color(colors[ci%colors.length]); ci++;
+    scene.background=c; scene.fog.color=c;
+  },180);
+  projLights.forEach(l=>{ l.intensity=3; });
+  setTimeout(()=>{
+    clearInterval(bbInterval); bigBangActive=false; chaos=45;
+    scene.background=new THREE.Color(0x050018); scene.fog.color=new THREE.Color(0x050018);
+    projLights.forEach(l=>{ l.intensity=0.7; });
+    document.getElementById('chaos-bar').style.width='45%';
+    document.getElementById('chaos-label').textContent='45%';
+    showToast('✨ El universo se expande de nuevo. Calma cósmica.');
+  },5000);
+}
+
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('event-toast'); t.textContent=msg; t.style.display='block';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',3500);
+}
+
+// ─── DANCE ─────────────────────────────────────────────────────────────────────
+let danceTime=0;
+function toggleDance(){ isDancing=!isDancing; if(isDancing) showToast('💃 ¡MODO BIG BANG DANCE!'); }
+function updateDance(dt){
+  if(!isDancing) return;
+  danceTime+=dt*3;
+  camera.position.y=1.65+Math.abs(Math.sin(danceTime))*0.22;
+  yaw+=Math.sin(danceTime*0.5)*0.022;
+}
+
+// ─── MOVEMENT ──────────────────────────────────────────────────────────────────
+const clock=new THREE.Clock();
+function updateMovement(dt){
+  if(dialogOpen) return;
+  if(keys['ArrowLeft'])  yaw+=1.6*dt;
+  if(keys['ArrowRight']) yaw-=1.6*dt;
+  if(isMobile&&Math.abs(lookVec.x||0)>0.04) yaw-=(lookVec.x||0)*dt*2.8;
+
+  const fwd=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+  const rgt=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+  const speed=5; let move=new THREE.Vector3();
+  if(keys['KeyW']||keys['ArrowUp']) move.add(fwd);
+  if(keys['KeyS']||keys['ArrowDown']) move.add(fwd.clone().negate());
+  if(keys['KeyA']) move.add(rgt.clone().negate());
+  if(keys['KeyD']) move.add(rgt);
+  if(isMobile&&(Math.abs(moveVec.x)>0.05||Math.abs(moveVec.y)>0.05)){
+    move.add(fwd.clone().multiplyScalar(-moveVec.y));
+    move.add(rgt.clone().multiplyScalar(moveVec.x));
+  }
+  if(move.lengthSq()>0) move.normalize().multiplyScalar(speed*dt);
+  camera.position.add(move);
+  camera.position.x=Math.max(-19,Math.min(19,camera.position.x));
+  camera.position.z=Math.max(-19,Math.min(19,camera.position.z));
+  camera.position.y=1.65;
+  camera.rotation.order='YXZ'; camera.rotation.y=yaw; camera.rotation.x=0; camera.rotation.z=0;
+}
+
+// ─── MINIMAP ───────────────────────────────────────────────────────────────────
+const mm=document.getElementById('mm'), mmC=mm.getContext('2d');
+function drawMinimap(){
+  mmC.fillStyle='#08030f'; mmC.fillRect(0,0,90,90);
+  mmC.strokeStyle='#8020cc'; mmC.lineWidth=1; mmC.strokeRect(2,2,86,86);
+  // Grid lines
+  mmC.strokeStyle='rgba(100,40,180,0.3)'; mmC.lineWidth=0.5;
+  for(let i=1;i<4;i++){ const v=2+i*21.5; mmC.beginPath(); mmC.moveTo(v,2); mmC.lineTo(v,88); mmC.stroke(); mmC.beginPath(); mmC.moveTo(2,v); mmC.lineTo(88,v); mmC.stroke(); }
+  // Projects
+  PROJECTS.forEach(p=>{
+    const mx=(p.x+21)/42*86+2, mz=(p.z+21)/42*86+2;
+    mmC.fillStyle='#'+p.color.toString(16).padStart(6,'0');
+    mmC.beginPath(); mmC.arc(mx,mz,3.5,0,Math.PI*2); mmC.fill();
+  });
+  // Player
+  const px=(camera.position.x+21)/42*86+2, pz=(camera.position.z+21)/42*86+2;
+  mmC.fillStyle='#fff'; mmC.beginPath(); mmC.arc(px,pz,5,0,Math.PI*2); mmC.fill();
+  mmC.strokeStyle='#ff9d00'; mmC.lineWidth=2; mmC.beginPath();
+  mmC.moveTo(px,pz); mmC.lineTo(px-Math.sin(yaw)*9,pz-Math.cos(yaw)*9); mmC.stroke();
+}
+
+// ─── ANIMATE PROJECTS ──────────────────────────────────────────────────────────
+function animateProjects(t){
+  projMeshes.forEach((g,i)=>{
+    // Crystal spin
+    const crystal=g.children[1];
+    if(crystal){ crystal.rotation.y=t*0.8+i; crystal.rotation.x=Math.sin(t*0.4+i)*0.3; }
+    // Ring spin
+    const ring=g.children[2];
+    if(ring) ring.rotation.z=t*1.2+i*0.5;
+    // Bob
+    g.position.y=Math.sin(t*0.9+i*0.7)*0.06;
+    // Label always faces camera
+    const label=g.children[4];
+    if(label){ const dx=camera.position.x-PROJECTS[i].x, dz=camera.position.z-PROJECTS[i].z; label.rotation.y=Math.atan2(dx,dz)-g.rotation.y; }
+    // Face player
+    const dx=camera.position.x-PROJECTS[i].x, dz=camera.position.z-PROJECTS[i].z;
+    g.rotation.y=Math.atan2(dx,dz);
+    // Pulse light
+    if(projLights[i]) projLights[i].intensity=0.5+Math.sin(t*2+i)*0.3;
+  });
+}
+
+// ─── ROOMBA ────────────────────────────────────────────────────────────────────
+let roombaAngle2=0;
+function updateRoomba(dt){
+  if(!roombaMesh) return;
+  roombaAngle+=dt*0.4;
+  const dist=camera.position.distanceTo(new THREE.Vector3(roombaMesh.position.x,camera.position.y,roombaMesh.position.z));
+  if(dist<8) roombaFollowing=true; if(dist>14) roombaFollowing=false;
+  if(roombaFollowing){
+    const dx=camera.position.x-roombaMesh.position.x, dz=camera.position.z-roombaMesh.position.z;
+    const d=Math.sqrt(dx*dx+dz*dz);
+    if(d>1.8){ roombaMesh.position.x+=(dx/d)*dt*1.8; roombaMesh.position.z+=(dz/d)*dt*1.8; }
+  } else {
+    roombaMesh.position.x=Math.sin(roombaAngle)*6; roombaMesh.position.z=3+Math.cos(roombaAngle*0.8)*4;
+  }
+  roombaMesh.rotation.y+=dt*2.5;
+  // Sync neon light (child index not tracked simply)
+}
+
+// ─── NEARBY ────────────────────────────────────────────────────────────────────
+function updateNearby(){
+  const idx=findNearby(), el=document.getElementById('nearby-prompt');
+  if(idx>=0&&!dialogOpen){
+    el.style.display='block';
+    el.textContent=isMobile?`🚀 TOCA — ${PROJECTS[idx].name}`:`[ E ] Ver ${PROJECTS[idx].name}`;
+  } else el.style.display='none';
+}
+
+// ─── RANDOM EVENTS ─────────────────────────────────────────────────────────────
+let nextEvt=18;
+const EVENTS=[
+  '🌌 ¡Nuevo cliente VIP ha entrado al universo!',
+  '📱 Actualización del algoritmo — ¡a pivotar!',
+  '☕ Ion Jacob derramó café sobre el brief. Otra vez.',
+  '💫 Jacqueline MQ tuvo una idea brillante a las 3am.',
+  '📚 Libro #41 en camino — EscritoresFamosos.com',
+  '🏆 ¡Nuevo Bestseller en el ecosistema Big Bang!',
+  '✈️ El nómada digital acaba de hacer check-in en Tokyo.',
+  '⚙️ El Gran Sistema acaba de duplicar un equipo MLM.',
+  '👑 Nueva Escuela MLM abierta — ¡plazas limitadas!',
+  '🤖 El Roomba está redactando una estrategia de contenidos.',
+  '🍕 Pizza gratis en el breakroom — ¡energía cósmica!',
+  '💥 ¡Más de 19.6K en redes! El Big Bang continúa.',
+];
+function checkEvents(t){
+  if(t>nextEvt){ showToast(EVENTS[Math.floor(Math.random()*EVENTS.length)]); addChaos(3); nextEvt=t+12+Math.random()*14; }
+}
+
+// ─── RENDER LOOP ───────────────────────────────────────────────────────────────
+function animate(){
+  requestAnimationFrame(animate);
+  if(!started) return;
+  const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
+  updateMovement(dt); updateDance(dt); animateProjects(t);
+  updateRoomba(dt); updateNearby(); drawMinimap(); checkEvents(t);
+  renderer.render(scene,camera);
+}
+animate(); clock.start();
+
+// ─── START ─────────────────────────────────────────────────────────────────────
+document.getElementById('start-btn').addEventListener('click',()=>{
+  started=true;
+  document.getElementById('title-screen').style.display='none';
+  showToast('🌌 ¡Bienvenido al universo Big Bang Social! Explora los proyectos.');
+  clock.start();
+  if(!isMobile) canvas.requestPointerLock();
+});
+
+renderer.render(scene,camera);
+</script>
+</body>
+</html>
