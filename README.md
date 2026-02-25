@@ -25,7 +25,7 @@ Descubre una experiencia interactiva y narrativa diseñada para clientes VIP: co
 - Abre el archivo `index.html` en tu navegador (proyecto estático). Para despliegue, sube los archivos a tu hosting preferido o usa GitHub Pages.
 
 **Equipo fundador**
- - Ion Jacob — Desarrollador de marcas VIP — GitHub: [@ioniacob](https://github.com/ioniacob) — ioniacob.com
+ - Ion Iacob — Desarrollador de marcas VIP — GitHub: [@ioniacob](https://github.com/ioniacob) — ioniacob.com
  - Jacqueline MQ — Creadora y editora — GitHub: [@jacquelinemq](https://github.com/jacquelinemq) — jacquelinemq.com
 
 **Reserva y contacto**
